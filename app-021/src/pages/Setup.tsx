@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from '../router'
 import { useStore } from '../store'
 import type { ClassEntity, LayoutConfig, Student } from '../types'
-import { buildSeats, specialLabel, visionLabel } from '../lib/layout'
+import { buildSeats, specialLabel, tierSizes, visionLabel } from '../lib/layout'
 import { validateClass } from '../lib/validate'
 import { uid } from '../lib/id'
 import { SeatGrid } from '../components/SeatGrid'
@@ -206,9 +206,12 @@ function LayoutEditor({ cls, onSave }: { cls: ClassEntity; onSave: (c: ClassEnti
       <div className="setup-preview">
         <SeatGrid cls={cls} compact />
         <div className="muted small">
-          自动标注：<b>前排/中排/后排</b>（按 1/3 行）、<b>靠窗</b>、<b>靠门</b>、<b>靠过道</b>；
-          「讲台侧」等特殊座位标记可在需求中补充说明。前排座位数 = 前 {cls.constraints.frontRows} 排 ×{' '}
-          {cls.layout.cols} 列 = {Math.min(cls.constraints.frontRows, cls.layout.rows) * cls.layout.cols} 个。
+          自动标注：<b>前排/中排/后排</b>（按 1/3 行均衡划分，与公平性报告同一套口径）、<b>靠窗</b>、<b>靠门</b>、<b>靠过道</b>；
+          「讲台侧」等特殊座位标记可在需求中补充说明。
+          <br />
+          前排（前 {tierSizes(cls.layout.rows).front} 排，约 1/3 行）座位 ={' '}
+          {tierSizes(cls.layout.rows).front * cls.layout.cols} 个；视力照顾「前 {cls.constraints.frontRows} 排」容量 ={' '}
+          {Math.min(cls.constraints.frontRows, cls.layout.rows) * cls.layout.cols} 个。
         </div>
       </div>
     </section>

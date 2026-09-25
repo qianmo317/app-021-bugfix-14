@@ -2,6 +2,26 @@ import type { LayoutConfig, Seat, SeatTag, Student } from '../types'
 
 // ============ 座位布局 ============
 
+// 前 / 中 / 后三段的唯一划分（座位标注与公平性统计共用，保证口径一致）。
+// 前、后各占 ceil(rows/3) 行，其余为中排：三段排数之和恒等于 rows，
+// 每排恰好属于一段（互斥、无遗漏、无重复）。
+// 例：3 排 → 1/1/1；5 排 → 2/1/2；6 排 → 2/2/2；2 排 → 1/0/1（无中排）。
+export function tierSizes(rows: number): { front: number; middle: number; back: number } {
+  const edge = Math.max(1, Math.ceil(rows / 3))
+  const front = Math.min(edge, rows)
+  const back = Math.min(edge, rows - front)
+  const middle = Math.max(0, rows - front - back)
+  return { front, middle, back }
+}
+
+// 某一排（0 = 最靠讲台）属于前 / 中 / 后哪一段
+export function rowTier(layout: LayoutConfig, row: number): SeatTag {
+  const { front, middle } = tierSizes(layout.rows)
+  if (row < front) return 'front'
+  if (row < front + middle) return 'middle'
+  return 'back'
+}
+
 export function seatIdOf(row: number, col: number): string {
   return `r${row}c${col}`
 }
@@ -9,12 +29,11 @@ export function seatIdOf(row: number, col: number): string {
 // 根据布局配置生成全部座位（含自动标注）
 export function buildSeats(layout: LayoutConfig): Seat[] {
   const seats: Seat[] = []
-  const frontThird = Math.max(1, Math.floor(layout.rows / 3))
   for (let r = 0; r < layout.rows; r++) {
     for (let c = 0; c < layout.cols; c++) {
       const tags: SeatTag[] = []
-      tags.push(r < frontThird ? 'front' : 'middle')
-      if (r >= layout.rows - frontThird) tags.push('back')
+      // 前 / 中 / 后：统一走 rowTier()，每个座位恰好属于一段（互斥且三段合计 = 全部排）
+      tags.push(rowTier(layout, r))
       if (isAisleSeat(layout, r, c)) tags.push('aisle')
       const doorCol = layout.doorSide === 'left' ? 0 : layout.cols - 1
       const windowCol = layout.doorSide === 'left' ? layout.cols - 1 : 0

@@ -219,7 +219,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-weak)
 .bar-row { display: grid; grid-template-columns: 90px 1fr 130px; gap: 10px; align-items: center; }
 .bar-name { font-size: 12.5px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-track { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: #eef1f6; }
-.bar-seg { display: block; height: 100%; }
+.bar-seg { display: block; height: 100%; flex: 0 0 auto; max-width: 100%; }
 .bar-front { background: var(--front); }
 .bar-middle { background: var(--middle); }
 .bar-back { background: var(--back); }

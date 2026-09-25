@@ -148,6 +148,26 @@ describe('公平性与交换（手工微调）', () => {
     expect(totalFront).toBe(6 * 4) // 每周前 1 排 4 个座位 × 6 周
     expect(report.hardViolations).toHaveLength(0)
   })
+
+  it('前/中/后三段次数之和恒等于周数（2~12 排，互斥无重叠）', () => {
+    for (let rows = 2; rows <= 12; rows++) {
+      const cols = 6
+      const cls = makeClass({ rows, cols, weeks: 8, seed: rows * 13 + 1 })
+      cls.assignments = generatePlan(cls)
+      const report = computeFairness(cls)
+      expect(report.rows).toHaveLength(rows * cols)
+      for (const r of report.rows) {
+        expect(r.frontCount + r.middleCount + r.backCount, `${r.student.name} rows=${rows}`).toBe(8)
+        expect([r.frontCount, r.middleCount, r.backCount].every((v) => v >= 0)).toBe(true)
+      }
+      // 三段计数之和 = 周数 × 人数（每个学生每周恰好落在一段）
+      const total =
+        report.rows.reduce((s, r) => s + r.frontCount, 0) +
+        report.rows.reduce((s, r) => s + r.middleCount, 0) +
+        report.rows.reduce((s, r) => s + r.backCount, 0)
+      expect(total, `rows=${rows} 全班三段总次数`).toBe(8 * rows * cols)
+    }
+  })
 })
 
 describe('引擎：性能（§8 40人×20周 < 1s）', () => {

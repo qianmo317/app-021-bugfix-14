@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSeatIndex, buildSeats, middleColSet, positionScore } from '../src/lib/layout'
+import { buildSeatIndex, buildSeats, middleColSet, positionScore, rowTier, tierSizes } from '../src/lib/layout'
 import type { LayoutConfig } from '../src/types'
 
 const layout: LayoutConfig = { rows: 3, cols: 6, aisles: [2], mode: 'rows', doorSide: 'right' }
@@ -54,5 +54,48 @@ describe('座位布局', () => {
     const idx = buildSeatIndex(buildSeats(g), g)
     const g1 = idx.deskmates[0] // r0c0 → G1
     expect(g1).toHaveLength(3) // r0c1, r1c0, r1c1
+  })
+
+  it('前/中/后三段：三段排数之和恒等于总行数（前/后各 ceil(rows/3)）', () => {
+    for (let rows = 2; rows <= 12; rows++) {
+      const { front, middle, back } = tierSizes(rows)
+      expect(front + middle + back, `rows=${rows} 三段之和`).toBe(rows)
+      expect(front, `rows=${rows} 前排非空`).toBeGreaterThanOrEqual(1)
+      expect(back, `rows=${rows} 后排非空`).toBeGreaterThanOrEqual(1)
+    }
+    // 代表性划分
+    expect(tierSizes(3)).toEqual({ front: 1, middle: 1, back: 1 })
+    expect(tierSizes(4)).toEqual({ front: 2, middle: 0, back: 2 })
+    expect(tierSizes(5)).toEqual({ front: 2, middle: 1, back: 2 })
+    expect(tierSizes(6)).toEqual({ front: 2, middle: 2, back: 2 })
+    expect(tierSizes(7)).toEqual({ front: 3, middle: 1, back: 3 })
+    expect(tierSizes(8)).toEqual({ front: 3, middle: 2, back: 3 })
+    expect(tierSizes(9)).toEqual({ front: 3, middle: 3, back: 3 })
+  })
+
+  it('每一排恰好属于一段（互斥、无遗漏）', () => {
+    for (let rows = 2; rows <= 12; rows++) {
+      const l: LayoutConfig = { rows, cols: 4, aisles: [], mode: 'rows', doorSide: 'right' }
+      const tiers = Array.from({ length: rows }, (_, r) => rowTier(l, r))
+      expect(new Set(tiers).size, `rows=${rows} 应至少覆盖前/后两段`).toBeGreaterThanOrEqual(2)
+      const counts: Record<'front' | 'middle' | 'back', number> = { front: 0, middle: 0, back: 0 }
+      for (const t of tiers) {
+        expect(t, `rows=${rows} 每排段标签合法`).toMatch(/^(front|middle|back)$/)
+        counts[t as 'front' | 'middle' | 'back']++
+      }
+      expect(counts, `rows=${rows}`).toEqual(tierSizes(rows))
+    }
+  })
+
+  it('每个座位恰好带一个前/中/后段标签（不再重叠）', () => {
+    for (let rows = 2; rows <= 12; rows++) {
+      const l: LayoutConfig = { rows, cols: 5, aisles: [2], mode: 'rows', doorSide: 'right' }
+      const seats = buildSeats(l)
+      for (const s of seats) {
+        const tierTags = s.tags.filter((t) => t === 'front' || t === 'middle' || t === 'back')
+        expect(tierTags, `${s.id} 应恰好一个段标签`).toHaveLength(1)
+        expect(tierTags[0]).toBe(rowTier(l, s.row))
+      }
+    }
   })
 })

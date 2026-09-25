@@ -1,5 +1,5 @@
 import type { ClassEntity, Seat, Student, StudentId } from '../types'
-import { buildSeatIndex, middleColSet, positionScore } from './layout'
+import { buildSeatIndex, middleColSet, positionScore, rowTier } from './layout'
 
 // ================= 公平性报告（§4.4 / §10） =================
 
@@ -139,7 +139,6 @@ export function computeFairness(cls: ClassEntity): FairnessReport {
   const backCount = new Map<StudentId, number>()
   const middleColCount = new Map<StudentId, number>()
 
-  const frontThird = Math.max(1, Math.ceil(cls.layout.rows / 3))
   const mc = middleColSet(cls.layout)
 
   for (const s of cls.students) {
@@ -162,9 +161,11 @@ export function computeFairness(cls: ClassEntity): FairnessReport {
       if (!seat || !cumScore.has(studentId)) continue
       cumScore.set(studentId, (cumScore.get(studentId) ?? 0) + positionScore(seat, cls.layout))
       if (seat.row < cls.constraints.frontRows) frontRowsCount.set(studentId, (frontRowsCount.get(studentId) ?? 0) + 1)
-      if (seat.row < frontThird) frontCount.set(studentId, (frontCount.get(studentId) ?? 0) + 1)
-      else if (seat.row >= cls.layout.rows - frontThird) backCount.set(studentId, (backCount.get(studentId) ?? 0) + 1)
-      else middleCount.set(studentId, (middleCount.get(studentId) ?? 0) + 1)
+      // 前/中/后按统一划分（与座位图标注同一套），三段互斥且合计 = 周数
+      const tier = rowTier(cls.layout, seat.row)
+      if (tier === 'front') frontCount.set(studentId, (frontCount.get(studentId) ?? 0) + 1)
+      else if (tier === 'middle') middleCount.set(studentId, (middleCount.get(studentId) ?? 0) + 1)
+      else backCount.set(studentId, (backCount.get(studentId) ?? 0) + 1)
       if (mc.has(seat.col)) middleColCount.set(studentId, (middleColCount.get(studentId) ?? 0) + 1)
     }
     for (const [a, b] of deskmatePairIds(cls, asg.map)) {

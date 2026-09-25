@@ -150,9 +150,10 @@ export function Fairness({ classId }: { classId: string }) {
                   </div>
                 ))}
                 <div className="legend">
-                  <em className="bar-front" /> 前排(1/3行)
+                  <em className="bar-front" /> 前排(前 1/3 行)
                   <em className="bar-middle" /> 中排
-                  <em className="bar-back" /> 后排(1/3行)
+                  <em className="bar-back" /> 后排(后 1/3 行)
+                  <span className="muted">（每人三段之和 = {report.totalWeeks} 周）</span>
                 </div>
               </div>
             )}

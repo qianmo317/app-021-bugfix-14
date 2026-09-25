@@ -1,6 +1,7 @@
 import type { Assignment, ClassEntity, Seat, Student } from '../types'
 import { useMemo, useRef } from 'react'
 import { Glasses, Focus, Ear, Accessibility, Pin, GraduationCap } from 'lucide-react'
+import { rowTier } from '../lib/layout'
 
 // ============ 座位图（共用组件）：Rotations 拖拽模式 / Print 打印模式 ============
 
@@ -87,10 +88,17 @@ export function SeatGrid({ cls, assignment, draggable, onSwapPreview, onDropSwap
         {cls.seats.map((seat) => {
           const st = occupantOf(seat)
           const tags = seat.tags
+          // 前/中/后底色统一由 layout+row 推导（与公平性统计同一套划分），不依赖可能陈旧的持久化 tags
+          const tierClass =
+            rowTier(cls.layout, seat.row) === 'front'
+              ? 'tag-front'
+              : rowTier(cls.layout, seat.row) === 'back'
+                ? 'tag-back'
+                : 'tag-middle'
           const cls2 = [
             'seat',
             st ? 'seat-occupied' : 'seat-empty',
-            tags.includes('front') ? 'tag-front' : tags.includes('back') ? 'tag-back' : 'tag-middle',
+            tierClass,
             tags.includes('window') ? 'tag-window' : '',
             tags.includes('door') ? 'tag-door' : '',
             tags.includes('aisle') ? 'tag-aisle' : '',

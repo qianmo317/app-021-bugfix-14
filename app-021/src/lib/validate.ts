@@ -26,6 +26,9 @@ export function validateClass(cls: ClassEntity): string[] {
   }
 
   // 容量检查
+  // 视力 front_required 必须坐前 N 排；听力必须坐前 ceil(rows/2) 排。
+  // 两个可行区域都是前缀，较小的那个必须同时装下两类学生（学生可同时属于两类），
+  // 因此容量按需求人数之和与较小区域座位数比较。
   const frontRows = Math.min(cls.constraints.frontRows, cls.layout.rows)
   const frontSeats = frontRows * cls.layout.cols
   const frontNeed = cls.students.filter((s) => s.vision === 'front_required' || s.special?.includes('hearing')).length

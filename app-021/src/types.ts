@@ -1,8 +1,8 @@
 // 数据模型（对应需求文档 §7）
+export type SeatZone = 'front' | 'middle' | 'back' // 前 / 中 / 后三段（按 1/3 行划分，互斥）
+
 export type SeatTag =
-  | 'front'      // 前排（自动：前 1/3 行）
-  | 'middle'     // 中排（自动）
-  | 'back'       // 后排（自动：后 1/3 行）
+  | SeatZone
   | 'aisle'      // 靠过道（自动/手动）
   | 'window'     // 靠窗
   | 'door'       // 靠门

@@ -141,6 +141,15 @@ function LayoutEditor({ cls, onSave }: { cls: ClassEntity; onSave: (c: ClassEnti
     )
     onSave({ ...cls, layout, seats, students }, true)
   }
+  // 前排容量说明（与 validateClass 的容量校验同口径）
+  const frontRowsN = Math.min(cls.constraints.frontRows, cls.layout.rows)
+  const sharedRowsN = Math.min(frontRowsN, Math.ceil(cls.layout.rows / 2))
+  const frontTotal = frontRowsN * cls.layout.cols
+  const frontCapacity = sharedRowsN * cls.layout.cols
+  const frontNeeded = cls.students.filter(
+    (s) => s.vision === 'front_required' || s.special?.includes('hearing'),
+  ).length
+  const frontRemaining = Math.max(0, frontCapacity - frontNeeded)
   return (
     <section className="card" data-testid="layout-editor">
       <h2>
@@ -206,9 +215,15 @@ function LayoutEditor({ cls, onSave }: { cls: ClassEntity; onSave: (c: ClassEnti
       <div className="setup-preview">
         <SeatGrid cls={cls} compact />
         <div className="muted small">
-          自动标注：<b>前排/中排/后排</b>（按 1/3 行）、<b>靠窗</b>、<b>靠门</b>、<b>靠过道</b>；
-          「讲台侧」等特殊座位标记可在需求中补充说明。前排座位数 = 前 {cls.constraints.frontRows} 排 ×{' '}
-          {cls.layout.cols} 列 = {Math.min(cls.constraints.frontRows, cls.layout.rows) * cls.layout.cols} 个。
+          自动标注：<b>前排/中排/后排</b>（按 1/3 行，与公平性报告同一套划分）、<b>靠窗</b>、<b>靠门</b>、
+          <b>靠过道</b>；「讲台侧」等特殊座位标记可在需求中补充说明。
+          前 {frontRowsN} 排共 <b data-testid="front-total">{frontTotal}</b> 个座位；
+          视力需前排 / 听力照顾的学生共 <b data-testid="front-needed">{frontNeeded}</b> 人，
+          按前 {sharedRowsN} 排容量 {frontCapacity} 座计算，前排还能坐{' '}
+          <b data-testid="front-remaining" className={frontRemaining === 0 ? 'warn-text' : ''}>
+            {frontRemaining}
+          </b>{' '}
+          人。
         </div>
       </div>
     </section>

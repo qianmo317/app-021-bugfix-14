@@ -1,8 +1,54 @@
 import { describe, expect, it } from 'vitest'
-import { buildSeatIndex, buildSeats, middleColSet, positionScore } from '../src/lib/layout'
+import { buildSeatIndex, buildSeats, frontThirdRows, middleColSet, positionScore, rowZone } from '../src/lib/layout'
 import type { LayoutConfig } from '../src/types'
 
 const layout: LayoutConfig = { rows: 3, cols: 6, aisles: [2], mode: 'rows', doorSide: 'right' }
+
+describe('前/中/后三段划分（座位标注与公平性统计的共同口径）', () => {
+  const L = (rows: number): LayoutConfig => ({ rows, cols: 4, aisles: [], mode: 'rows', doorSide: 'right' })
+
+  it('每个座位恰好带一个区段标签，且与 rowZone 一致', () => {
+    for (const rows of [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
+      const seats = buildSeats(L(rows))
+      for (const s of seats) {
+        const zones = s.tags.filter((t) => t === 'front' || t === 'middle' || t === 'back')
+        expect(zones, `rows=${rows} ${s.id} tags=${s.tags.join(',')}`).toEqual([rowZone(s.row, L(rows))])
+      }
+    }
+  })
+
+  it('三段恰好覆盖全部排、同段连续不回跳；3 的倍数时各占 1/3', () => {
+    const order = { front: 0, middle: 1, back: 2 } as const
+    for (const rows of [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
+      const counts = { front: 0, middle: 0, back: 0 }
+      for (let r = 0; r < rows; r++) {
+        const z = rowZone(r, L(rows))
+        counts[z]++
+        if (r > 0) expect(order[z]).toBeGreaterThanOrEqual(order[rowZone(r - 1, L(rows))])
+      }
+      expect(counts.front + counts.middle + counts.back).toBe(rows)
+      if (rows % 3 === 0) {
+        const t = rows / 3
+        expect(counts).toEqual({ front: t, middle: t, back: t })
+        expect(frontThirdRows(rows)).toBe(t)
+      }
+    }
+  })
+
+  it('前后各占 ceil(rows/3)，中间补齐', () => {
+    // ceil 口径：rows=4 前2(r0r1) 后2(r2r3) 中间0；rows=5 前2 中1 后2；rows=6 各2
+    expect([0, 1, 2, 3].map((r) => rowZone(r, L(4)))).toEqual(['front', 'front', 'back', 'back'])
+    expect([0, 1, 2, 3, 4].map((r) => rowZone(r, L(5)))).toEqual(['front', 'front', 'middle', 'back', 'back'])
+    expect([0, 1, 2, 3, 4, 5].map((r) => rowZone(r, L(6)))).toEqual([
+      'front',
+      'front',
+      'middle',
+      'middle',
+      'back',
+      'back',
+    ])
+  })
+})
 
 describe('座位布局', () => {
   it('生成行列齐全的座位并自动标注', () => {

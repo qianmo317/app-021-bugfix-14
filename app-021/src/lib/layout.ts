@@ -1,4 +1,4 @@
-import type { LayoutConfig, Seat, SeatTag, Student } from '../types'
+import type { LayoutConfig, Seat, SeatTag, SeatZone, Student } from '../types'
 
 // ============ 座位布局 ============
 
@@ -6,15 +6,27 @@ export function seatIdOf(row: number, col: number): string {
   return `r${row}c${col}`
 }
 
+// 前 / 中 / 后三段划分：全系统唯一口径，座位标注与公平性统计都必须用它。
+// 前、后各占 ceil(rows/3) 排，中间为其余排；三段互斥且恰好覆盖全部排，
+// 因此每名学生每周只落在一段，三段次数之和恒等于周数。
+export function frontThirdRows(rows: number): number {
+  return Math.max(1, Math.ceil(rows / 3))
+}
+
+export function rowZone(row: number, layout: LayoutConfig): SeatZone {
+  const third = frontThirdRows(layout.rows)
+  if (row < third) return 'front'
+  if (row >= layout.rows - third) return 'back'
+  return 'middle'
+}
+
 // 根据布局配置生成全部座位（含自动标注）
 export function buildSeats(layout: LayoutConfig): Seat[] {
   const seats: Seat[] = []
-  const frontThird = Math.max(1, Math.floor(layout.rows / 3))
   for (let r = 0; r < layout.rows; r++) {
     for (let c = 0; c < layout.cols; c++) {
       const tags: SeatTag[] = []
-      tags.push(r < frontThird ? 'front' : 'middle')
-      if (r >= layout.rows - frontThird) tags.push('back')
+      tags.push(rowZone(r, layout)) // 前 / 中 / 后互斥，每座恰好一段
       if (isAisleSeat(layout, r, c)) tags.push('aisle')
       const doorCol = layout.doorSide === 'left' ? 0 : layout.cols - 1
       const windowCol = layout.doorSide === 'left' ? layout.cols - 1 : 0

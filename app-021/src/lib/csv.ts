@@ -77,7 +77,7 @@ export function weeksCSV(cls: ClassEntity): (string | number)[][] {
     for (const [seatId, studentId] of Object.entries(asg.map)) {
       const seat = idx.byId.get(seatId)
       if (!seat) continue
-      const tagText = seat.tags.filter((t) => t !== 'middle').join('/')
+      const tagText = seat.tags.filter((t) => !t.startsWith('group:')).join('/')
       rows.push([asg.week, seat.row + 1, seat.col + 1, seat.id, nameOf.get(studentId) ?? studentId, tagText])
     }
   }
